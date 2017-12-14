@@ -1,6 +1,6 @@
 /*
 *
-* @brief: This program is written as a two player chess emulator just for fun
+* @brief: This program is written as a one or two player chess emulator
 *
 *@author: Fredrik Treven
 *@date: December 5th 2017
@@ -29,7 +29,6 @@ class Board {
     const char* names[NUM_STRINGS]; /* Piece Grid */
     char letters[NUM_COLS];         /* Column Lettering */
     int numbers[NUM_ROWS];          /* Row Numbering */
-    int bw;
     public:
         Board(void);
         void new_grid(void);
@@ -75,6 +74,7 @@ Board::Board (void)
 }
 
 int char_to_int(char);
+bool check_move(int, int, int, int, int, int);
 
 int main()
 {
@@ -83,7 +83,7 @@ int main()
     char source[2];
     char dest[2];
     int check;
-
+    int mv;
     while (!board_c.game_over()) {
         
         printf("Select a piece to move and where to move it 'q' to quit:");
@@ -99,6 +99,7 @@ int main()
             printf("Could not read destination location input [Error: %d]\n", check);
 
         printf("\nx position = %c%c, y position = %c%c check = %d\n", source[0], source[1], dest[0], dest[1], check);
+        mv = board_c.move(source[1], source[0], dest[1], dest[0]);
         return 0;
 
     }
@@ -152,23 +153,51 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
     int new_col = char_to_int(new_col_c);
     int piece = grid[row][col];
     int new_loc = grid[new_row][new_col];
+    bool move_ok;
 
-    bw = piece % 2;
-    /* Check if there is a piece at this location */
-    if (row > NUM_ROWS-1 || row < 0 || col > NUM_COLS-1 || col < 0)
-        return EOB; /* Piece out of bounds */
+    move_ok = check_move(piece, row, col, new_row, new_col, new_loc);
 
-    if (piece == 0)
-        return ENO; /* No Piece Found at Location */
-    
-    if(grid[new_row][new_col] %2 != bw)
+    if(move_ok) {
+        printf("Move is ok\n");
+        return 1;
+    } else {
+        printf("Move not ok\n");
+        return 0;
+    }
 
 }
 
+bool check_move(int piece, int row, int col, int new_row, int new_col, int new_loc)
+{
+    bool bw = piece % 2;
+    bool ans;
+    /* Check if there is a piece at this location */
+    if (row > NUM_ROWS-1 || row < 0 || col > NUM_COLS-1 || col < 0) {
+        printf("New Location Out of Bounds\n");
+        return false; /* Piece out of bounds */
+    } else if (piece == 0) {
+        printf("No Piece at Designated Location\n");
+        return false; /* No Piece Found at Location */
+    }
+
+    if (new_loc %2 != bw || new_loc == 0) {
+        switch(piece) {
+            case 1: /* White Pawn */
+                if(new_row != row+1 || new_row!=row+2)
+                    ans = false;
+                else
+                    ans = true;
+                break;
+            default:
+                ans = false;
+                printf("No Piece Found\n");
+        }
+    }
+
+    return ans;
+}
 void Board::print_grid(void)
 {
-    int tmp;
-
     for(int row = NUM_ROWS-1; row >= 0; row--)
     {
         printf("%d\t", numbers[row]);
@@ -177,7 +206,6 @@ void Board::print_grid(void)
         {
             int val = grid[row][col];
             printf("%s\t", names[val]);
-            tmp = col;
         }
         printf("\n");
         printf("\n");
