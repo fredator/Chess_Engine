@@ -13,15 +13,26 @@
 #include <stdio.h>
 /* TODO: move definitions etc. into board.h */
 using namespace std;
-
+/* Constants */
 #define NUM_ROWS 8
 #define NUM_COLS 8
 #define NUM_STRINGS 13
-#define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
+#define EMPTY 0
+#define WT_PWN 1
+#define BK_PWN 2
+#define WT_KNT 3
+#define BK_KNT 4
+#define WT_BSP 5
+#define BK_BSP 6
+#define WT_ROK 7
+#define BK_ROK 8
+#define WT_QEN 9
+#define BK_QEN 10
+#define WT_KNG 11
+#define BK_KNG 12
 
-/* Errors */
-#define ENO -1
-#define EOB -2
+/* Macros */
+#define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
 
 /* Class Definition */
 class Board {
@@ -29,13 +40,14 @@ class Board {
     const char* names[NUM_STRINGS]; /* Piece Grid */
     char letters[NUM_COLS];         /* Column Lettering */
     int numbers[NUM_ROWS];          /* Row Numbering */
-    int game_state;
     public:
         Board(void);
         void new_grid(void);
         void print_grid(void);
         int move(int, char, int, char);
         bool game_over(int);
+        bool check_blocked(int, int, int, int, int);
+        int turn;                       /* Black or White's turn */
 };
 
 /* Constructor */
@@ -74,6 +86,7 @@ Board::Board (void)
     }
 }
 
+/* Helper function templates */
 int char_to_int(char);
 bool check_move(int, int, int, int, int, int);
 
@@ -81,6 +94,7 @@ int main()
 {
     Board board_c;
     board_c.print_grid();
+    board_c.turn = 1;
     char source[2];
     char dest[2];
     int check;
@@ -110,13 +124,17 @@ int main()
         mv = board_c.move(source[1] - '0', source[0], dest[1] - '0', dest[0]);
         if(mv == 1) {
             printf("Move Successful!\n");
-            board_c.print_grid();
         }
+        else
+            printf("Move Unsuccessful\n");
+
+        board_c.print_grid();
     }
 
     return 0;
 }
 
+/* Function descriptions */
 bool Board::game_over(int q)
 {
     if(q == 0)
@@ -162,6 +180,7 @@ int char_to_int(char c)
 
     return ret;
 }
+
 int Board::move(int row, char col_c, int new_row, char new_col_c)
 {
     int col = char_to_int(col_c);
@@ -171,51 +190,85 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
     int piece = grid[row][col];
     int piece_dest = grid[new_row][new_col];
     printf("%s: Piece being moved: %d \t Piece at destination:%d\n", __func__, piece, piece_dest);
-    bool move_ok;
+    bool move_ok, is_blocked;
 
     printf("%s: New Position found is %d %d\n", __func__, new_row, new_col);
     move_ok = check_move(piece, row, col, new_row, new_col, piece_dest);
+    is_blocked = check_blocked(piece, row, col, new_row, new_col);
 
-    if(move_ok) {
+    if(move_ok && !is_blocked) {
+        if (piece == WT_PWN &&  new_row == NUM_ROWS-1)
+            piece = WT_QEN;
+        else if (piece == BK_PWN && new_row == 0)
+            piece = BK_QEN;
+
         printf("Move is ok\n");
         grid[new_row][new_col] = piece; /* Populate square with moved piece */
-        grid[row][col] = 0;             /* Empty Previous square */   
+        grid[row][col] = 0;             /* Empty Previous square */
         return 1;
     } else {
-        printf("Move not ok\n");
+        printf("%s: Move not ok, block status = %d\n", __func__, is_blocked);
         return 0;
     }
 
 }
 
+/* Returns true if blocked */
+bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
+{
+    bool ret;
+    switch (piece) {
+        case WT_PWN:
+            if(new_col == col && grid[new_row][new_col] != EMPTY)
+                ret = true;
+            else
+                ret = false;
+            break;
+        default:
+            ret = false;
+            printf("%s: Piece not found: %d\n", __func__, piece);
+    }
+
+    return ret;
+}
+
 bool check_move(int piece, int row, int col, int new_row, int new_col, int piece_dest)
 {
     int bw = piece % 2;
+    int bw_dest = piece_dest % 2;
     bool ret;
 
     /* Check if there is a piece at this location */
     if (row > NUM_ROWS-1 || row < 0 || col > NUM_COLS-1 || col < 0) {
-        printf("Selected location Out of Bounds\n");
+        printf("%s: Selected location Out of Bounds\n", __func__);
         return false; /* Piece out of bounds */
     } else if (piece == 0) {
-        printf("No Piece at Designated Location\n");
+        printf("%s: No Piece at Designated Location\n", __func__);
         return false; /* No Piece Found at Location */
+    } else if (new_row > NUM_ROWS-1 || new_row < 0 || new_col > NUM_COLS-1 || new_col < 0) {
+        printf("%s: Selected destination out of bounds\n", __func__);
+        return false;
+    } else if(bw == bw_dest && piece_dest != 0) {
+        printf("%s: Move blocked by same-colored piece at destination %d %d\n", __func__, bw, bw_dest);
+        return false;
     }
+
 
     printf("%s: Piece at source location =%d\n", __func__, piece);
     if (piece_dest %2 != bw || piece_dest == 0) { /* Can move to this location */
         switch(piece) {
-            case 1: /* White Pawn */
-                if(new_row == row+1 || new_row == row+2)
+            case WT_PWN:
+                if(new_row == row+1 || (new_row == row+2 && row == 1 && col == new_col))
                     ret = true;
                 else
                     ret = false;
                 break;
             default:
                 ret = false;
-                printf("No Piece Found\n");
+                printf("%s: That move is not valid for this game piece\n", __func__);
         }
     }
+
 
     return ret;
 }
@@ -244,38 +297,38 @@ void Board::print_grid(void)
 
 void Board::new_grid(void)
 {
-    grid[0][0] = 7;  /* White Rook   */
-    grid[0][1] = 3;  /* White Knight */
-    grid[0][2] = 5;  /* White Bishop */
-    grid[0][3] = 9;  /* White Queen  */
-    grid[0][4] = 11; /* White King   */
-    grid[0][5] = 5;
-    grid[0][6] = 3;
-    grid[0][7] = 7;
-    grid[1][0] = 1;  /* White Pawn   */
-    grid[1][1] = 1;
-    grid[1][2] = 1;
-    grid[1][3] = 1;
-    grid[1][4] = 1;
-    grid[1][5] = 1;
-    grid[1][6] = 1;
-    grid[1][7] = 1;
-    grid[6][0] = 2;  /*Black Pawn    */
-    grid[6][1] = 2;
-    grid[6][2] = 2;
-    grid[6][3] = 2;
-    grid[6][4] = 2;
-    grid[6][5] = 2;
-    grid[6][6] = 2;
-    grid[6][7] = 2;
-    grid[7][0] = 8;  /* Black Rook   */
-    grid[7][1] = 4;  /* Black Knight */
-    grid[7][2] = 6;  /* Black Bishop */
-    grid[7][3] = 10; /* Black Queen  */
-    grid[7][4] = 12; /* Black King   */
-    grid[7][5] = 6;
-    grid[7][6] = 4;
-    grid[7][7] = 8;
+    grid[0][0] = WT_ROK;  /* White Rook   */
+    grid[0][1] = WT_KNT;  /* White Knight */
+    grid[0][2] = WT_BSP;  /* White Bishop */
+    grid[0][3] = WT_QEN;  /* White Queen  */
+    grid[0][4] = WT_KNG; /* White King   */
+    grid[0][5] = WT_BSP;
+    grid[0][6] = WT_KNT;
+    grid[0][7] = WT_ROK;
+    grid[1][0] = WT_PWN;  /* White Pawn   */
+    grid[1][1] = WT_PWN;
+    grid[1][2] = WT_PWN;
+    grid[1][3] = WT_PWN;
+    grid[1][4] = WT_PWN;
+    grid[1][5] = WT_PWN;
+    grid[1][6] = WT_PWN;
+    grid[1][7] = WT_PWN;
+    grid[6][0] = BK_PWN;  /*Black Pawn    */
+    grid[6][1] = BK_PWN;
+    grid[6][2] = BK_PWN;
+    grid[6][3] = BK_PWN;
+    grid[6][4] = BK_PWN;
+    grid[6][5] = BK_PWN;
+    grid[6][6] = BK_PWN;
+    grid[6][7] = BK_PWN;
+    grid[7][0] = BK_ROK;  /* Black Rook   */
+    grid[7][1] = BK_KNT;  /* Black Knight */
+    grid[7][2] = BK_BSP;  /* Black Bishop */
+    grid[7][3] = BK_QEN; /* Black Queen  */
+    grid[7][4] = BK_KNG; /* Black King   */
+    grid[7][5] = BK_BSP;
+    grid[7][6] = BK_KNT;
+    grid[7][7] = BK_ROK;
 
     for(int row = 2; row < NUM_ROWS - 2; row++)
     {
