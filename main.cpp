@@ -29,12 +29,13 @@ class Board {
     const char* names[NUM_STRINGS]; /* Piece Grid */
     char letters[NUM_COLS];         /* Column Lettering */
     int numbers[NUM_ROWS];          /* Row Numbering */
+    int game_state;
     public:
         Board(void);
         void new_grid(void);
         void print_grid(void);
         int move(int, char, int, char);
-        bool game_over(void);
+        bool game_over(int);
 };
 
 /* Constructor */
@@ -84,10 +85,17 @@ int main()
     char dest[2];
     int check;
     int mv;
-    while (!board_c.game_over()) {
+    int quit = 0;
+
+    while (!board_c.game_over(quit)) {
         
         printf("Select a piece to move and where to move it 'q' to quit:");
         check = scanf("%s", source);
+        if(source[0] == 'q') {
+            printf("Game Exiting \n");
+            quit = 1;
+            break;
+        }
 
         if (check != 1)
             printf("Could not read source location input [Error: %d]\n", check);
@@ -99,15 +107,22 @@ int main()
             printf("Could not read destination location input [Error: %d]\n", check);
 
         printf("\nx position = %c%c, y position = %c%c check = %d\n", source[0], source[1], dest[0], dest[1], check);
-        mv = board_c.move(source[1], source[0], dest[1], dest[0]);
-        return 0;
-
+        mv = board_c.move(source[1] - '0', source[0], dest[1] - '0', dest[0]);
+        if(mv == 1) {
+            printf("Move Successful!\n");
+            board_c.print_grid();
+        }
     }
+
+    return 0;
 }
 
-bool Board::game_over(void)
+bool Board::game_over(int q)
 {
-    return false;
+    if(q == 0)
+        return false;
+    else
+        return true;
 }
 
 int char_to_int(char c)
@@ -151,14 +166,20 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
 {
     int col = char_to_int(col_c);
     int new_col = char_to_int(new_col_c);
+    row = row - 1;
+    new_row = new_row - 1;
     int piece = grid[row][col];
-    int new_loc = grid[new_row][new_col];
+    int piece_dest = grid[new_row][new_col];
+    printf("%s: Piece being moved: %d \t Piece at destination:%d\n", __func__, piece, piece_dest);
     bool move_ok;
 
-    move_ok = check_move(piece, row, col, new_row, new_col, new_loc);
+    printf("%s: New Position found is %d %d\n", __func__, new_row, new_col);
+    move_ok = check_move(piece, row, col, new_row, new_col, piece_dest);
 
     if(move_ok) {
         printf("Move is ok\n");
+        grid[new_row][new_col] = piece; /* Populate square with moved piece */
+        grid[row][col] = 0;             /* Empty Previous square */   
         return 1;
     } else {
         printf("Move not ok\n");
@@ -167,34 +188,36 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
 
 }
 
-bool check_move(int piece, int row, int col, int new_row, int new_col, int new_loc)
+bool check_move(int piece, int row, int col, int new_row, int new_col, int piece_dest)
 {
-    bool bw = piece % 2;
-    bool ans;
+    int bw = piece % 2;
+    bool ret;
+
     /* Check if there is a piece at this location */
     if (row > NUM_ROWS-1 || row < 0 || col > NUM_COLS-1 || col < 0) {
-        printf("New Location Out of Bounds\n");
+        printf("Selected location Out of Bounds\n");
         return false; /* Piece out of bounds */
     } else if (piece == 0) {
         printf("No Piece at Designated Location\n");
         return false; /* No Piece Found at Location */
     }
 
-    if (new_loc %2 != bw || new_loc == 0) {
+    printf("%s: Piece at source location =%d\n", __func__, piece);
+    if (piece_dest %2 != bw || piece_dest == 0) { /* Can move to this location */
         switch(piece) {
             case 1: /* White Pawn */
-                if(new_row != row+1 || new_row!=row+2)
-                    ans = false;
+                if(new_row == row+1 || new_row == row+2)
+                    ret = true;
                 else
-                    ans = true;
+                    ret = false;
                 break;
             default:
-                ans = false;
+                ret = false;
                 printf("No Piece Found\n");
         }
     }
 
-    return ans;
+    return ret;
 }
 void Board::print_grid(void)
 {
