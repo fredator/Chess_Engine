@@ -11,9 +11,14 @@
 #include <string>
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
+
 /* TODO: move definitions etc. into board.h */
+
 using namespace std;
+
 /* Constants */
+
 #define NUM_ROWS 8
 #define NUM_COLS 8
 #define NUM_STRINGS 13
@@ -129,9 +134,10 @@ int main()
             board_c.turn = !board_c.turn;
             board_c.turn_number ++;
             printf("Total moves: %d\n", board_c.turn_number);
-        }
-        else
+        } else {
             printf("Move Unsuccessful\n");
+            printf("Total moves: %d\n", board_c.turn_number);
+        }
 
         board_c.print_grid();
     }
@@ -194,7 +200,7 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
     new_row = new_row - 1;
     int piece = grid[row][col];
     int piece_dest = grid[new_row][new_col];
-    printf("%s: Piece being moved: %d \t Piece at destination:%d\n", __func__, piece, piece_dest);
+    printf("%s: Piece being moved: %d \t Piece at destination: %d\n", __func__, piece, piece_dest);
     bool move_ok, is_blocked;
 
     printf("%s: New Position found is %d %d\n", __func__, new_row, new_col);
@@ -222,22 +228,17 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
 bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
 {
     bool ret;
-    switch (piece) {
-        case WT_PWN:
-            if((new_col == col && grid[new_row][new_col] != EMPTY) || (col != new_col && grid[new_row][new_col] == EMPTY))
-                ret = true;
-            else
-                ret = false;
-            break;
-        case BK_PWN:
-            if((new_col == col && grid[new_row][new_col] != EMPTY) || (col != new_col && grid[new_row][new_col] == EMPTY))
-                ret = true;
-            else
-                ret = false;
-            break;
-        default:
+
+    if(piece == WT_PWN || piece == BK_PWN) {
+        if((new_col == col && grid[new_row][new_col] != EMPTY) || (col != new_col && grid[new_row][new_col] == EMPTY))
+            ret = true;
+        else
             ret = false;
-            printf("%s: Piece not found: %d\n", __func__, piece);
+    } else if (piece == WT_KNT || piece == BK_KNT) { /* Knights cannot be blocked */
+        ret = false;
+    } else {
+        ret = true;
+        printf("%s: Piece not found: %d\n", __func__, piece);
     }
 
     return ret;
@@ -259,27 +260,40 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
     } else if (new_row > NUM_ROWS-1 || new_row < 0 || new_col > NUM_COLS-1 || new_col < 0) {
         printf("%s: Selected destination out of bounds\n", __func__);
         return false;
-    } else if(bw == bw_dest && piece_dest != 0) {
+    } else if (bw == bw_dest && piece_dest != 0) {
         printf("%s: Move blocked by same-colored piece at destination %d %d\n", __func__, bw, bw_dest);
         return false; /* Another piece of the same color is on that square */
     }
 
+    printf("%s: Piece at source location = %d\n", __func__, piece);
 
-    printf("%s: Piece at source location =%d\n", __func__, piece);
     if (piece_dest %2 != bw || piece_dest == 0) { /* Can move to this location */
-        if (turn == true) {
-            switch(piece) {
+        if (turn == true) { /* White's turn */
+            switch (piece) {
                 case WT_PWN:
-                    if(new_row == row+1 || (new_row == row+2 && row == 1 && col == new_col))
+                    if (new_row == row+1 || (new_row == row+2 && row == 1 && col == new_col))
                         ret = true;
                     else
                         ret = false;
+                    break;
+                case WT_KNT:
+                    if (new_row == row+1 || new_row == row-1) {
+                        if(new_col == col+2 || new_col == col-2)
+                            ret = true;
+                        else
+                            ret = false;
+                    } else if (new_row == row+2 || new_row == row-2) {
+                        if(new_col == col+1 || new_col == col-1)
+                            ret = true;
+                        else
+                            ret = false;
+                    }
                     break;
                 default:
                     ret = false;
                     printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
             }
-        } else {
+        } else { /* Black's turn */
             switch(piece) {
                 case BK_PWN:
                     if(new_row == row-1 || (new_row == row-2 && row == 6 && col == new_col))
@@ -287,19 +301,32 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
                     else
                         ret = false;
                     break;
+                case BK_KNT:
+                    if (new_row == row+1 || new_row == row-1) {
+                        if(new_col == col+2 || new_col == col-2)
+                            ret = true;
+                        else
+                            ret = false;
+                    } else if (new_row == row+2 || new_row == row-2) {
+                        if(new_col == col+1 || new_col == col-1)
+                            ret = true;
+                        else
+                            ret = false;
+                    }
+                    break;
                 default:
                     ret = false;
                     printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
             }
         }
     }
+
     return ret;
 }
 
 void Board::print_grid(void)
 {
-    for(int row = NUM_ROWS-1; row >= 0; row--)
-    {
+    for(int row = NUM_ROWS-1; row >= 0; row--) {
         printf("%d\t", numbers[row]);
 
         for(int col = 0; col < NUM_COLS; col++)
@@ -312,8 +339,7 @@ void Board::print_grid(void)
     }
 
     printf("\t");
-    for (int y = 0; y < NUM_COLS; y++)
-    {
+    for (int y = 0; y < NUM_COLS; y++) {
         printf("%c\t", letters[y]);
     }
     printf("\n");
@@ -325,7 +351,7 @@ void Board::new_grid(void)
     grid[0][1] = WT_KNT;  /* White Knight */
     grid[0][2] = WT_BSP;  /* White Bishop */
     grid[0][3] = WT_QEN;  /* White Queen  */
-    grid[0][4] = WT_KNG; /* White King   */
+    grid[0][4] = WT_KNG;  /* White King   */
     grid[0][5] = WT_BSP;
     grid[0][6] = WT_KNT;
     grid[0][7] = WT_ROK;
@@ -356,8 +382,7 @@ void Board::new_grid(void)
 
     for(int row = 2; row < NUM_ROWS - 2; row++)
     {
-        for(int col = 0; col < NUM_COLS; col++)
-        {
+        for(int col = 0; col < NUM_COLS; col++) {
             grid[row][col] = 0;
         }
     }
