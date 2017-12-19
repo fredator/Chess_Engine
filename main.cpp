@@ -228,14 +228,36 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
 bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
 {
     bool ret;
+    int d_row, d_col;
+    int s_row, s_col;
+    int warn = 0;
 
     if(piece == WT_PWN || piece == BK_PWN) {
         if((new_col == col && grid[new_row][new_col] != EMPTY) || (col != new_col && grid[new_row][new_col] == EMPTY))
             ret = true;
         else
             ret = false;
-    } else if (piece == WT_KNT || piece == BK_KNT) { /* Knights cannot be blocked */
+    } else if (piece == WT_KNT || piece == BK_KNT) { /* Knights cannot be blocked in this way */
         ret = false;
+    } else if (piece == WT_BSP || piece == BK_BSP) {
+        d_row = new_row - row;
+        d_col = new_col - col;
+        s_row = (d_row > 0) - (d_row < 0); /* Get sign of diff */
+        s_col = (d_col > 0) - (d_col < 0);
+
+        for (int x = row + s_row; x != new_row; x += s_row) {
+            for (int y = col + s_col; y != new_col; y += s_col) {
+                if (grid[x][y] != EMPTY) {
+                    warn = 1;
+                    printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
+                }
+            }
+        }
+
+        if(warn != 0)
+            ret = true;
+        else
+            ret = false;
     } else {
         ret = true;
         printf("%s: Piece not found: %d\n", __func__, piece);
@@ -249,6 +271,8 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
     int bw = piece % 2;
     int bw_dest = piece_dest % 2;
     bool ret;
+    int c_row;
+    int c_col;
 
     /* Check if there is a piece at this location */
     if (row > NUM_ROWS-1 || row < 0 || col > NUM_COLS-1 || col < 0) {
@@ -289,6 +313,14 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
                             ret = false;
                     }
                     break;
+                case WT_BSP:
+                    c_row = row - new_row;
+                    c_col = col-new_col;
+                    if (c_row != 0 && abs(c_row) == abs(c_col))
+                        ret = true;
+                    else
+                        ret = false;
+                    break;
                 default:
                     ret = false;
                     printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
@@ -313,6 +345,14 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
                         else
                             ret = false;
                     }
+                    break;
+                case BK_BSP:
+                    c_row = row - new_row;
+                    c_col = col-new_col;
+                    if (c_row != 0 && abs(c_row) == abs(c_col))
+                        ret = true;
+                    else
+                        ret = false;
                     break;
                 default:
                     ret = false;
