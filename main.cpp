@@ -207,7 +207,7 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
     move_ok = check_move(piece, row, col, new_row, new_col, piece_dest);
     is_blocked = check_blocked(piece, row, col, new_row, new_col);
 
-    if(move_ok && !is_blocked) {
+    if (move_ok && !is_blocked) {
         if (piece == WT_PWN &&  new_row == NUM_ROWS-1) /* Pawn Promotion */
             piece = WT_QEN;
         else if (piece == BK_PWN && new_row == 0)
@@ -232,8 +232,8 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
     int s_row, s_col;
     int warn = 0;
 
-    if(piece == WT_PWN || piece == BK_PWN) {
-        if((new_col == col && grid[new_row][new_col] != EMPTY) || (col != new_col && grid[new_row][new_col] == EMPTY))
+    if (piece == WT_PWN || piece == BK_PWN) {
+        if ((new_col == col && grid[new_row][new_col] != EMPTY) || (col != new_col && grid[new_row][new_col] == EMPTY))
             ret = true;
         else
             ret = false;
@@ -248,16 +248,42 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
         for (int x = row + s_row; x != new_row; x += s_row) {
             for (int y = col + s_col; y != new_col; y += s_col) {
                 if (grid[x][y] != EMPTY) {
-                    warn = 1;
+                    warn ++;
                     printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
                 }
             }
         }
 
-        if(warn != 0)
+        if (warn != 0)
             ret = true;
         else
             ret = false;
+    } else if (piece == WT_ROK || piece == BK_ROK) {
+            d_row = new_row - row;
+            d_col = new_col - col;
+
+            if (d_row == 0) {
+                s_col = (d_col > 0) - (d_col < 0); /* Get sign of diff */
+                for (int x = col + s_col; x != new_col; x += s_col) {
+                    if (grid[row][x] != EMPTY) {
+                        warn ++;
+                        printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, row, x, warn);
+                    }
+                }
+            } else {
+                s_row = (d_row > 0) - (d_row < 0);
+                for (int x = row + s_row; x != new_row; x += s_row) {
+                    if(grid[x][col] != EMPTY) {
+                        warn ++;
+                        printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, col, warn);
+                    }
+                }
+            }
+
+            if(warn != 0)
+                ret = true;
+            else
+                ret = false;
     } else {
         ret = true;
         printf("%s: Piece not found: %d\n", __func__, piece);
@@ -288,76 +314,86 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
         printf("%s: Move blocked by same-colored piece at destination %d %d\n", __func__, bw, bw_dest);
         return false; /* Another piece of the same color is on that square */
     }
+    /* TODO: move last else if to check_blocked and change returns to gotos or breaks or ret = */
 
     printf("%s: Piece at source location = %d\n", __func__, piece);
-
-    if (piece_dest %2 != bw || piece_dest == 0) { /* Can move to this location */
-        if (turn == true) { /* White's turn */
-            switch (piece) {
-                case WT_PWN:
-                    if (new_row == row+1 || (new_row == row+2 && row == 1 && col == new_col))
-                        ret = true;
-                    else
-                        ret = false;
-                    break;
-                case WT_KNT:
-                    if (new_row == row+1 || new_row == row-1) {
-                        if(new_col == col+2 || new_col == col-2)
-                            ret = true;
-                        else
-                            ret = false;
-                    } else if (new_row == row+2 || new_row == row-2) {
-                        if(new_col == col+1 || new_col == col-1)
-                            ret = true;
-                        else
-                            ret = false;
-                    }
-                    break;
-                case WT_BSP:
-                    c_row = row - new_row;
-                    c_col = col-new_col;
-                    if (c_row != 0 && abs(c_row) == abs(c_col))
-                        ret = true;
-                    else
-                        ret = false;
-                    break;
-                default:
+    if (turn == true) { /* White's turn */
+        switch (piece) {
+            case WT_PWN:
+                if (new_row == row+1 || (new_row == row+2 && row == 1 && col == new_col))
+                    ret = true;
+                else
                     ret = false;
-                    printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
-            }
-        } else { /* Black's turn */
-            switch(piece) {
-                case BK_PWN:
-                    if(new_row == row-1 || (new_row == row-2 && row == 6 && col == new_col))
+                break;
+            case WT_KNT:
+                if (new_row == row+1 || new_row == row-1) {
+                    if(new_col == col+2 || new_col == col-2)
                         ret = true;
                     else
                         ret = false;
-                    break;
-                case BK_KNT:
-                    if (new_row == row+1 || new_row == row-1) {
-                        if(new_col == col+2 || new_col == col-2)
-                            ret = true;
-                        else
-                            ret = false;
-                    } else if (new_row == row+2 || new_row == row-2) {
-                        if(new_col == col+1 || new_col == col-1)
-                            ret = true;
-                        else
-                            ret = false;
-                    }
-                    break;
-                case BK_BSP:
-                    c_row = row - new_row;
-                    c_col = col-new_col;
-                    if (c_row != 0 && abs(c_row) == abs(c_col))
+                } else if (new_row == row+2 || new_row == row-2) {
+                    if(new_col == col+1 || new_col == col-1)
                         ret = true;
                     else
                         ret = false;
-                    break;
-                default:
+                }
+                break;
+            case WT_BSP:
+                c_row = row - new_row;
+                c_col = col-new_col;
+                if (c_row != 0 && abs(c_row) == abs(c_col))
+                    ret = true;
+                else
                     ret = false;
-                    printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
-            }
+                break;
+            case WT_ROK:
+                if ((new_row == row && new_col != col) || (new_row != row && new_col == col))
+                    ret = true;
+                else
+                    ret = false;
+                break;
+            default:
+                ret = false;
+                printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
+        }
+    } else { /* Black's turn */
+        switch (piece) {
+            case BK_PWN:
+                if (new_row == row-1 || (new_row == row-2 && row == 6 && col == new_col))
+                    ret = true;
+                else
+                    ret = false;
+                break;
+            case BK_KNT:
+                if (new_row == row+1 || new_row == row-1) {
+                    if(new_col == col+2 || new_col == col-2)
+                        ret = true;
+                    else
+                        ret = false;
+                } else if (new_row == row+2 || new_row == row-2) {
+                    if(new_col == col+1 || new_col == col-1)
+                        ret = true;
+                    else
+                        ret = false;
+                }
+                break;
+            case BK_BSP:
+                c_row = row - new_row;
+                c_col = col-new_col;
+                if (c_row != 0 && abs(c_row) == abs(c_col))
+                    ret = true;
+                else
+                    ret = false;
+                break;
+            case BK_ROK:
+                if ((new_row == row && new_col != col) || (new_row != row && new_col == col))
+                    ret = true;
+                else
+                    ret = false;
+                break;
+            default:
+                ret = false;
+                printf("%s: That move is not valid for this game piece or it is not your turn\n", __func__);
         }
     }
 
