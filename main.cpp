@@ -50,11 +50,12 @@ class Board {
         void new_grid(void);
         void print_grid(void);
         int move(int, char, int, char);
-        bool game_over(int);
+        bool game_over(void);
         bool check_move(int, int, int, int, int, int);
         bool check_blocked(int, int, int, int, int);
         bool turn;                       /* Black or White's turn (true = white, false = black)*/
         int turn_number;
+        int quit;
 };
 
 /* Constructor */
@@ -106,15 +107,15 @@ int main()
     char dest[2];
     int check;
     int mv;
-    int quit = 0;
+    board_c.quit = 0;
 
-    while (!board_c.game_over(quit)) {
+    while (!board_c.game_over()) {
         
         printf("Select a piece to move and where to move it 'q' to quit:");
         check = scanf("%s", source);
         if(source[0] == 'q') {
             printf("Game Exiting \n");
-            quit = 1;
+            board_c.quit = 1;
             break;
         }
 
@@ -146,9 +147,9 @@ int main()
 }
 
 /* Function descriptions */
-bool Board::game_over(int q)
+bool Board::game_over(void)
 {
-    if(q == 0)
+    if(quit == 0)
         return false;
     else
         return true;
@@ -214,8 +215,8 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
             piece = BK_QEN;
 
         printf("Move is ok\n");
-        grid[new_row][new_col] = piece; /* Populate square with moved piece */
-        grid[row][col] = 0;             /* Empty Previous square */
+        grid[new_row][new_col] = piece;     /* Populate square with moved piece */
+        grid[row][col] = EMPTY;             /* Empty Previous square */
         return 1;
     } else {
         printf("%s: Move not ok, block status = %d\n", __func__, is_blocked);
@@ -259,9 +260,40 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
         else
             ret = false;
     } else if (piece == WT_ROK || piece == BK_ROK) {
-            d_row = new_row - row;
-            d_col = new_col - col;
+        d_row = new_row - row;
+        d_col = new_col - col;
 
+        if (d_row == 0) {
+            s_col = (d_col > 0) - (d_col < 0); /* Get sign of diff */
+            for (int x = col + s_col; x != new_col; x += s_col) {
+                if (grid[row][x] != EMPTY) {
+                    warn ++;
+                    printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, row, x, warn);
+                }
+            }
+        } else {
+            s_row = (d_row > 0) - (d_row < 0);
+            for (int x = row + s_row; x != new_row; x += s_row) {
+                if(grid[x][col] != EMPTY) {
+                    warn ++;
+                    printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, col, warn);
+                }
+            }
+        }
+
+        if(warn != 0)
+            ret = true;
+        else
+            ret = false;
+    } else if (piece == WT_QEN || piece == BK_QEN) {
+        d_row = new_row - row;
+        d_col = new_col - col;
+        s_row = (d_row > 0) - (d_row < 0); /* Get sign of diff */
+        s_col = (d_col > 0) - (d_col < 0);
+
+
+        /* Check Horizontal/Vertical */
+        if (d_row == 0 || d_col == 0) {
             if (d_row == 0) {
                 s_col = (d_col > 0) - (d_col < 0); /* Get sign of diff */
                 for (int x = col + s_col; x != new_col; x += s_col) {
@@ -279,14 +311,24 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
                     }
                 }
             }
+        } else { /* Check Diagonal */
+            for (int x = row + s_row; x != new_row; x += s_row) {
+                for (int y = col + s_col; y != new_col; y += s_col) {
+                    if (grid[x][y] != EMPTY) {
+                        warn ++;
+                        printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
+                    }
+                }
+            }
+        }
 
-            if(warn != 0)
+            if (warn != 0)
                 ret = true;
             else
                 ret = false;
-    } else {
-        ret = true;
-        printf("%s: Piece not found: %d\n", __func__, piece);
+        } else {
+            ret = true;
+            printf("%s: Piece not found: %d\n", __func__, piece);
     }
 
     return ret;
@@ -314,7 +356,7 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
         printf("%s: Move blocked by same-colored piece at destination %d %d\n", __func__, bw, bw_dest);
         return false; /* Another piece of the same color is on that square */
     }
-    /* TODO: move last else if to check_blocked and change returns to gotos or breaks or ret = */
+    /* TODO: move last else if to check_blocked and change returns to gotos or breaks or ret = .. maybe? */
 
     printf("%s: Piece at source location = %d\n", __func__, piece);
     if (turn == true) { /* White's turn */
@@ -348,6 +390,14 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
                 break;
             case WT_ROK:
                 if ((new_row == row && new_col != col) || (new_row != row && new_col == col))
+                    ret = true;
+                else
+                    ret = false;
+                break;
+            case WT_QEN:
+                c_row = row - new_row;
+                c_col = col-new_col;
+                if ((c_row != 0 && abs(c_row) == abs(c_col)) || ((new_row == row && new_col != col) || (new_row != row && new_col == col)))
                     ret = true;
                 else
                     ret = false;
@@ -387,6 +437,14 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
                 break;
             case BK_ROK:
                 if ((new_row == row && new_col != col) || (new_row != row && new_col == col))
+                    ret = true;
+                else
+                    ret = false;
+                break;
+            case BK_QEN:
+                c_row = row - new_row;
+                c_col = col-new_col;
+                if ((c_row != 0 && abs(c_row) == abs(c_col)) || ((new_row == row && new_col != col) || (new_row != row && new_col == col)))
                     ret = true;
                 else
                     ret = false;
@@ -450,8 +508,8 @@ void Board::new_grid(void)
     grid[7][0] = BK_ROK;  /* Black Rook   */
     grid[7][1] = BK_KNT;  /* Black Knight */
     grid[7][2] = BK_BSP;  /* Black Bishop */
-    grid[7][3] = BK_QEN; /* Black Queen  */
-    grid[7][4] = BK_KNG; /* Black King   */
+    grid[7][3] = BK_QEN;  /* Black Queen  */
+    grid[7][4] = BK_KNG;  /* Black King   */
     grid[7][5] = BK_BSP;
     grid[7][6] = BK_KNT;
     grid[7][7] = BK_ROK;
@@ -459,7 +517,7 @@ void Board::new_grid(void)
     for(int row = 2; row < NUM_ROWS - 2; row++)
     {
         for(int col = 0; col < NUM_COLS; col++) {
-            grid[row][col] = 0;
+            grid[row][col] = EMPTY;
         }
     }
 }
