@@ -36,6 +36,12 @@ using namespace std;
 #define WT_KNG 11
 #define BK_KNG 12
 
+/* Colors */
+
+#define ANSI_COLOR_YELLOW "\x1b[33m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_RESET "\x1b[0m"
+
 /* Macros */
 #define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
 
@@ -53,7 +59,7 @@ class Board {
         bool game_over(void);
         bool check_move(int, int, int, int, int, int);
         bool check_blocked(int, int, int, int, int);
-        bool turn;                       /* Black or White's turn (true = white, false = black)*/
+        bool turn;                  /* Black or White's turn (true = white, false = black) */
         int turn_number;
         int quit;
 };
@@ -356,7 +362,7 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
         printf("%s: Move blocked by same-colored piece at destination %d %d\n", __func__, bw, bw_dest);
         return false; /* Another piece of the same color is on that square */
     }
-    /* TODO: move last else if to check_blocked and change returns to gotos or breaks or ret = .. maybe? */
+    /* TODO: move last else if to check_blocked */
 
     printf("%s: Piece at source location = %d\n", __func__, piece);
     if (turn == true) { /* White's turn */
@@ -466,7 +472,10 @@ void Board::print_grid(void)
         for(int col = 0; col < NUM_COLS; col++)
         {
             int val = grid[row][col];
-            printf("%s\t", names[val]);
+            if(val %2 == 0)
+                printf(ANSI_COLOR_MAGENTA "%s\t" ANSI_COLOR_RESET, names[val]);
+            else
+                printf(ANSI_COLOR_YELLOW "%s\t" ANSI_COLOR_RESET, names[val]);
         }
         printf("\n");
         printf("\n");
@@ -497,7 +506,7 @@ void Board::new_grid(void)
     grid[1][5] = WT_PWN;
     grid[1][6] = WT_PWN;
     grid[1][7] = WT_PWN;
-    grid[6][0] = BK_PWN;  /*Black Pawn    */
+    grid[6][0] = BK_PWN;  /* Black Pawn    */
     grid[6][1] = BK_PWN;
     grid[6][2] = BK_PWN;
     grid[6][3] = BK_PWN;
