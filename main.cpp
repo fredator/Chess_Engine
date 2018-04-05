@@ -91,7 +91,7 @@ int main()
 
     while (!board_c.game_over()) {
         
-        printf("Select a piece to move and where to move it 'q' to quit:");
+        printf("Select a piece to move and where to move it [i.e. a2 a4] 'q' to quit:\n ======>");
         check = scanf("%s", source);
         if (source[0] == 'q') {
             printf("Game Exiting \n");
