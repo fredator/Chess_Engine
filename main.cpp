@@ -29,6 +29,8 @@ class Board {
         void print_grid(void);
         int move(int, char, int, char);
         bool game_over(void);
+        bool is_in_check(int);
+        int promote (int);
         bool check_move(int, int, int, int, int, int);
         bool check_blocked(int, int, int, int, int);
         bool turn;                  /* Black or White's turn (true = white, false = black) */
@@ -106,7 +108,7 @@ int main()
         if (check != 1)
             printf("Could not read destination location input [Error: %d]\n", check);
 
-        printf("\nx position = %c%c, y position = %c%c check = %d\n", source[0], source[1], dest[0], dest[1], check);
+        printf("\nx position = %c%c, y position = %c%c\n", source[0], source[1], dest[0], dest[1]);
         mv = board_c.move(source[1] - '0', source[0], dest[1] - '0', dest[0]);
         if (mv == 1) {
             printf("Move Successful!\n");
@@ -188,9 +190,9 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
 
     if (move_ok && !is_blocked) {
         if (piece == WT_PWN &&  new_row == NUM_ROWS-1) /* Pawn Promotion */
-            piece = WT_QEN;
+            piece = promote(piece);
         else if (piece == BK_PWN && new_row == 0)
-            piece = BK_QEN;
+            piece = promote(piece);
 
         printf("Move is ok\n");
         grid[new_row][new_col] = piece;     /* Populate square with moved piece */
@@ -201,6 +203,36 @@ int Board::move(int row, char col_c, int new_row, char new_col_c)
         return 0;
     }
 
+}
+
+int Board::promote(int piece)
+{
+    int check, rem;
+    char val;
+    printf("\n Pawn Promotion! Enter the first letter to get:\n [Q]ueen\n [R]ook\n [K]night\n [B]ishop\n");
+
+    check = scanf(" %c", &val);
+    if(check != 1)
+    {
+        printf("%s: Scanning value (%c) failed, please try again\n", __func__, val);
+        promote(piece);
+    }
+
+    rem = piece%2;
+
+    if(val == 'Q' || val == 'q')
+        return BK_QEN - rem;
+    else if (val == 'R' || val == 'r')
+        return BK_ROK - rem;
+    else if (val == 'K' || val == 'k')
+        return BK_KNT - rem;
+    else if (val == 'B' || val == 'b')
+        return BK_BSP - rem;
+    else {
+        printf("%s: Cannot promote to this value (%c), please try again: \n", __func__, val);
+        return promote(piece);
+    }
+    
 }
 
 /* Returns true if blocked */
@@ -443,10 +475,12 @@ void Board::print_grid(void)
         for(int col = 0; col < NUM_COLS; col++)
         {
             int val = grid[row][col];
-            if(val %2 == 0)
+            if(val % 2 == 0 && val != 0)
                 printf(ANSI_COLOR_MAGENTA "%s\t" ANSI_COLOR_RESET, names[val]);
-            else
+            else if(val % 2 == 1)
                 printf(ANSI_COLOR_YELLOW "%s\t" ANSI_COLOR_RESET, names[val]);
+            else
+                printf("%s\t", names[val]);
         }
         printf("\n");
         printf("\n");
