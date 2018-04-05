@@ -256,12 +256,12 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
         s_row = (d_row > 0) - (d_row < 0); /* Get sign of diff */
         s_col = (d_col > 0) - (d_col < 0);
 
+        int y;
         for (int x = row + s_row; x != new_row; x += s_row) {
-            for (int y = col + s_col; y != new_col; y += s_col) {
-                if (grid[x][y] != EMPTY) {
-                    warn ++;
-                    printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
-                }
+            y = col + s_col;
+            if (grid[x][y] != EMPTY) {
+                warn ++;
+                printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
             }
         }
 
@@ -300,12 +300,11 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
         d_col = new_col - col;
         s_row = (d_row > 0) - (d_row < 0); /* Get sign of diff */
         s_col = (d_col > 0) - (d_col < 0);
-
+        int y;
 
         /* Check Horizontal/Vertical */
         if (d_row == 0 || d_col == 0) {
             if (d_row == 0) {
-                s_col = (d_col > 0) - (d_col < 0); /* Get sign of diff */
                 for (int x = col + s_col; x != new_col; x += s_col) {
                     if (grid[row][x] != EMPTY) {
                         warn ++;
@@ -323,12 +322,11 @@ bool Board::check_blocked(int piece, int row, int col, int new_row, int new_col)
             }
         } else { /* Check Diagonal */
             for (int x = row + s_row; x != new_row; x += s_row) {
-                for (int y = col + s_col; y != new_col; y += s_col) {
-                    if (grid[x][y] != EMPTY) {
-                        warn ++;
-                        printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
-                    }
-                }
+                y = col + s_col;      
+                if (grid[x][y] != EMPTY) {
+                    warn ++;
+                    printf("%s: Checking grid[%d][%d] with a warn now = %d\n", __func__, x, y, warn);
+                } 
             }
         }
 
