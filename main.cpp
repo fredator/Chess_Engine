@@ -13,37 +13,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* TODO: move definitions etc. into board.h */
+#include "chess.h"
 
 using namespace std;
-
-/* Constants */
-
-#define NUM_ROWS 8
-#define NUM_COLS 8
-#define NUM_STRINGS 13
-#define EMPTY 0
-#define WT_PWN 1
-#define BK_PWN 2
-#define WT_KNT 3
-#define BK_KNT 4
-#define WT_BSP 5
-#define BK_BSP 6
-#define WT_ROK 7
-#define BK_ROK 8
-#define WT_QEN 9
-#define BK_QEN 10
-#define WT_KNG 11
-#define BK_KNG 12
-
-/* Colors */
-
-#define ANSI_COLOR_YELLOW "\x1b[33m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_RESET "\x1b[0m"
-
-/* Macros */
-#define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
 
 /* Class Definition */
 class Board {
@@ -119,7 +91,7 @@ int main()
         
         printf("Select a piece to move and where to move it 'q' to quit:");
         check = scanf("%s", source);
-        if(source[0] == 'q') {
+        if (source[0] == 'q') {
             printf("Game Exiting \n");
             board_c.quit = 1;
             break;
@@ -136,7 +108,7 @@ int main()
 
         printf("\nx position = %c%c, y position = %c%c check = %d\n", source[0], source[1], dest[0], dest[1], check);
         mv = board_c.move(source[1] - '0', source[0], dest[1] - '0', dest[0]);
-        if(mv == 1) {
+        if (mv == 1) {
             printf("Move Successful!\n");
             board_c.turn = !board_c.turn;
             board_c.turn_number ++;
@@ -362,7 +334,6 @@ bool Board::check_move(int piece, int row, int col, int new_row, int new_col, in
         printf("%s: Move blocked by same-colored piece at destination %d %d\n", __func__, bw, bw_dest);
         return false; /* Another piece of the same color is on that square */
     }
-    /* TODO: move last else if to check_blocked */
 
     printf("%s: Piece at source location = %d\n", __func__, piece);
     if (turn == true) { /* White's turn */

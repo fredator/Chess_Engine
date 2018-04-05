@@ -3,7 +3,7 @@ CC = g++
 #-g adds debugging info to executable
 #-Wall turns on most compiler warnings
 CFLAGS = -g -Wall
-TARGET = chess
+TARGET = chess.sh
 
 all: $(TARGET)
 
